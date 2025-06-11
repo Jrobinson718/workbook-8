@@ -16,7 +16,10 @@ public class Main {
 
         Statement statement = connection.createStatement();
 
-        String query = "SELECT ProductName FROM products";
+        String query = """
+                SELECT ProductName\s
+                FROM products\s
+               """;
 
         ResultSet results = statement.executeQuery(query);
 
