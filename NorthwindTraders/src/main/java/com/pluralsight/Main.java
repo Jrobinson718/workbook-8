@@ -3,47 +3,68 @@ package com.pluralsight;
 import java.sql.*;
 
 public class Main {
+
+    private static  sqlConnectionInfo sqlConnectionInfo;
+
     public static void main(String[] args) throws SQLException,ClassNotFoundException {
-        if (args.length != 2) {
+        if (args.length != 3) {
             System.out.println("Application needs two arguments to run:" +
                     "java com.pluralsight.Main <username> <password>");
             System.exit(1);
         }
 
-        String username = args[0];
-        String password = args[1];
+        sqlConnectionInfo = getSqlConnectionInfoFromArgs(args);
 
-        displayCities(103, username, password);
+        try{
+            displayCities(103);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-    public static void displayCities(int countryID, String username, String password) throws SQLException, ClassNotFoundException {
+    public static sqlConnectionInfo getSqlConnectionInfoFromArgs(String[] args) {
+        // get username and password from the command line args
+        String username = args[0];
+        String password = args[1];
+        String connectionString = args[2];
 
-        String connectionString = "jdbc:mysql://localhost:3306/sakila";
-        // Loads MySQL driver
-        Class.forName("com.mysql.cj.jdbc.Driver");
+        return new sqlConnectionInfo(connectionString, username, password);
+    }
+    public static void displayCities(int countryID) throws SQLException, ClassNotFoundException {
 
-        // Opens a connection to the database using the url to point to the correct one.
-        Connection connection;
-        connection = DriverManager.getConnection(connectionString, username, password);
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet results = null;
 
-        // Query
-        String query = "SELECT city FROM city " +
-                "WHERE country_id = ?";
+        try {
+            // Loads MySQL driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
 
-        // Create statement
-        PreparedStatement ps = connection.prepareStatement(query);
-        ps.setInt(1, countryID);
+            // Opens a connection to the database
+            connection = DriverManager.getConnection(
+                    sqlConnectionInfo.getConnectionString(),
+                    sqlConnectionInfo.getUsername(),
+                    sqlConnectionInfo.getPassword());
 
-        // Executes Query
-        ResultSet results = ps.executeQuery();
+            // Query
+            String query = "SELECT city FROM city " +
+                    "WHERE country_id = ?";
 
-        // Process results
-        while (results.next()) {
-            String city = results.getString("city");
-            System.out.println(city);
+            ps = connection.prepareStatement(query);
+            ps.setInt(1, countryID);
+            results = ps.executeQuery();
+
+            while (results.next()) {
+                String city = results.getString("city");
+                System.out.println(city);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if (results != null) results.close();
+            if (ps != null) ps.close();
+            if (connection != null) connection.close();
         }
-        results.close();
-        ps.close();
-        connection.close();
     }
 }
